@@ -34,33 +34,39 @@ namespace twin_futs
         private const int TS_Parking = 7;
         private const int TS_Parked = 8;
 
-        FutPgsql pgUser;
-        FutMgrNet futMgr;
-        DeviceParams[] deviceParams;
+        public FutPgsql futSqlUser;
+        public FutMgrNet futMgr;
+        public DeviceParams[] deviceParams;
         Thread futMgrThread;
-        private List<OT> otList;
-        private List<GRB> grbList;
-
+        public List<OT> otList;
+        public List<GRB> grbList;
+        public List<ObsTar> obsTarList;
+        public FrmObserve frmObserve;
         public FormFuts()
         {
             InitializeComponent();
 
-            pgUser = new FutPgsql();
+            futSqlUser = new FutPgsql();
             otList = new List<OT>();
             grbList = new List<GRB>();
+            obsTarList = new List<ObsTar>();
 
             deviceParams = new DeviceParams[]{new DeviceParams(), new DeviceParams()};
-            futMgr = new FutMgrNet(deviceParams, otList, grbList);
+            futMgr = new FutMgrNet(deviceParams, otList, grbList, obsTarList);
 
             //启动总控网络信息收发
             futMgrThread = new Thread(new ThreadStart(futMgr.StartServer));
             futMgrThread.IsBackground = true;
             futMgrThread.Start();
 
-
-            //
+            //设定主界面更新间隔
             timerUpdateStatus.Interval = 100;
             timerUpdateStatus.Enabled = true;
+
+            //初始化观测界面窗口
+            //frmObserve = new FrmObserve(otList, grbList, obsTarList, futSqlUser);
+            frmObserve = new FrmObserve(this);
+
         }
 
         private void timerUpdateStatus_Tick(object sender, EventArgs e)
@@ -89,6 +95,10 @@ namespace twin_futs
             textBoxS1MDate.Text = deviceParams[0].mountParams.date;
             textBoxS1MUt.Text = deviceParams[0].mountParams.ut;
             textBoxS1MSt.Text = deviceParams[0].mountParams.st;
+            textBoxS1MTarRa.Text = deviceParams[0].mountParams.targetRa;
+            //deviceParams[0].mountParams.targetRa;
+            //textBoxS1MTarDec.Text = deviceParams[0].mountParams.targetDec;
+            textBoxS1MTarDec.Text = deviceParams[0].mountParams.targetDec;
             //textBoxS1MMovStat.Text = deviceParams[0].mountParams.stat.ToString();
             switch (deviceParams[0].mountParams.stat)
             {
@@ -169,6 +179,7 @@ namespace twin_futs
                 textBoxS1WMovStat.Text = "stopped";
             }
             textBoxS1WCurColor.Text = (deviceParams[0].wheelParams.curPos + 1).ToString();
+            labelS1Stat.Text = deviceParams[0].teleStat == 1 ? "观测中..." : "空闲";
         }
 
         private void UpdateFutStatusS2()
@@ -191,6 +202,8 @@ namespace twin_futs
             textBoxS2MDate.Text = deviceParams[1].mountParams.date;
             textBoxS2MUt.Text = deviceParams[1].mountParams.ut;
             textBoxS2MSt.Text = deviceParams[1].mountParams.st;
+            textBoxS2MTarRa.Text = deviceParams[1].mountParams.targetRa;
+            textBoxS2MTarDec.Text = deviceParams[1].mountParams.targetDec;
             //textBoxS2MMovStat.Text = deviceParams[1].mountParams.stat.ToString();
             switch (deviceParams[1].mountParams.stat)
             {
@@ -271,6 +284,16 @@ namespace twin_futs
                 textBoxS2WMovStat.Text = "stopped";
             }
             textBoxS2WCurColor.Text = (deviceParams[1].wheelParams.curPos + 1).ToString();
+            labelS2Stat.Text = deviceParams[1].teleStat == 1 ? "观测中..." : "空闲";
+        }
+
+        private void 开始观测ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (frmObserve!=null)
+            {
+                frmObserve.Show();
+                frmObserve.Focus();
+            }
         }
     }
 }

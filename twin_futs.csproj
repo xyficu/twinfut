@@ -55,12 +55,23 @@
       <DependentUpon>FrmTwinFuts.cs</DependentUpon>
     </Compile>
     <Compile Include="FutMgrNet.cs" />
-    <Compile Include="FutOTRcv.cs" />
     <Compile Include="FutPgsql.cs" />
+    <Compile Include="FrmObserve.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmObserve.Designer.cs">
+      <DependentUpon>FrmObserve.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ListViewNF.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="FrmTwinFuts.resx">
       <DependentUpon>FrmTwinFuts.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FrmObserve.resx">
+      <DependentUpon>FrmObserve.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

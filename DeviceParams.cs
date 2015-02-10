@@ -131,7 +131,7 @@ namespace twin_futs
             id = "";
             ra = "";
             dec = "";
-            probeTime = "";
+            addTime = "";
             mag = "";
             endFlag = "";
             status = "";
@@ -141,7 +141,7 @@ namespace twin_futs
         public string id;
         public string ra;
         public string dec;
-        public string probeTime;
+        public string addTime;
         public string mag;
         public string status;
         public string endFlag;
@@ -169,6 +169,7 @@ namespace twin_futs
             amount = 0;
             type = 0;
             deviceType = "";
+            fileName = "";
         }
         public int id;
         public string ra;
@@ -178,6 +179,7 @@ namespace twin_futs
         public int amount;
         public int type;
         public string deviceType;
+        public string fileName;
     }
 
 }

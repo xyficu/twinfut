@@ -4,15 +4,17 @@ using System.Linq;
 using System.Text;
 using Npgsql;
 using System.Data;
+using System.Windows.Forms;
 
 namespace twin_futs
 {
-    class FutPgsql
+    public class FutPgsql
     {
         NpgsqlConnection conn;
         public FutPgsql()
         {
             conn = GetConn();
+            conn.Open();
         }
 
         public NpgsqlConnection GetConn()
@@ -28,8 +30,11 @@ namespace twin_futs
         {
             try
             {
-                conn.Open();
-                
+                if (conn.State==ConnectionState.Closed)
+                {
+                    conn.Open();
+                }
+
                 NpgsqlCommand cmd = new NpgsqlCommand(queryStr, conn);
                 int count = Convert.ToInt32(cmd.ExecuteScalar());
                 Console.WriteLine("count: " + count);
@@ -49,19 +54,23 @@ namespace twin_futs
         {
             try
             {
-                conn.Open();
+                if (conn.State == ConnectionState.Closed)
+                {
+                    conn.Open();
+                }
                 NpgsqlCommand cmd = new NpgsqlCommand(queryStr, conn);
                 NpgsqlDataReader dr = cmd.ExecuteReader();
                 Console.WriteLine("read successfully!");
 
-                while (dr.Read())
-                {
-                    for (int i = 0; i < dr.FieldCount; i++)
-                    {
-                        Console.Write("{0} \t", dr[i]);
-                    }
-                    Console.WriteLine();
-                }
+                //while (dr.Read())
+                //{
+                //    for (int i = 0; i < dr.FieldCount; i++)
+                //    {
+                //        Console.Write("{0} \t", dr[i]);
+                //    }
+                //    Console.WriteLine();
+                //}
+                
                 conn.Close();
                 return dr;
             }
@@ -77,7 +86,10 @@ namespace twin_futs
         {
             try
             {
-                conn.Open();
+                if (conn.State == ConnectionState.Closed)
+                {
+                    conn.Open();
+                }
                 NpgsqlCommand cmd = new NpgsqlCommand(changeStr, conn);
                 int count = cmd.ExecuteNonQuery();
                 Console.WriteLine("count: " + count);
@@ -90,21 +102,57 @@ namespace twin_futs
             }
         }
 
-        public void DatasetFill(string cmdStr)
+        public DataSet DatasetFill(string cmdStr)
         {
             try
             {
-                conn.Open();
+                if (conn.State == ConnectionState.Closed)
+                {
+                    conn.Open();
+                }
                 DataSet ds = new DataSet();
                 NpgsqlDataAdapter dap = new NpgsqlDataAdapter(cmdStr, conn);
                 dap.Fill(ds, "fut");
+                conn.Close();
+                return ds;
 
             }
             catch (System.Exception ex)
             {
                 Console.WriteLine(ex.Message);
                 conn.Close();
+                return null;
             }
         }
+        //添加OT到数据库
+        public void AddOT(OT ot)
+        {
+            string cmdStr = "insert into ot values (" +
+                   ot.id.ToString() + ",'" +
+                   ot.ra + "','" +
+                   ot.dec + "'," +
+                   ot.mag.ToString() + "," +
+                   ot.status.ToString() + "," +
+                   "to_timestamp('" + ot.addTime + "','" + "yyyymmddThh24miss'" + "));";
+            ChangeTable(cmdStr);
+        }
+        //更新数据库OT表某个OT的状态
+        public void UpdateOTStat(int id, int status)
+        {
+            string cmdStr = "update ot set status = " + status.ToString() + " where id = " + id.ToString();
+            ChangeTable(cmdStr);
+        }
+        //添加GRB到数据库
+        public void AddGRB()
+        {
+
+        }
+        //更新数据库GRB表某个GRB的状态
+        public void UpdateGRBStat()
+        {
+
+        }
+
+        
     }
 }

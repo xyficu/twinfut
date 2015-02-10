@@ -8,7 +8,7 @@ using System.Net;
 
 namespace twin_futs
 {
-    class FutMgrNet
+    public class FutMgrNet
     {
         //save device connections
         public Dictionary<string, Socket> mDeviceConnections;
@@ -20,14 +20,16 @@ namespace twin_futs
         ClientThread newClient;
         private List<OT> otList;
         private List<GRB> grbList;
-        public FutMgrNet(DeviceParams[] dev, List<OT> _otList, List<GRB> _grbList)
+        private List<ObsTar> obsTarList;
+        public FutMgrNet(DeviceParams[] dev, List<OT> _otList, List<GRB> _grbList, List<ObsTar> _obsTarList)
         {
             otList = _otList;
             grbList = _grbList;
+            obsTarList = _obsTarList;
             mDeviceConnections = new Dictionary<string, Socket>();
             mDeviceParams = dev;
             
-            refreshFreq = 100;
+            refreshFreq = 1000;
             refreshThread = new Thread(new ThreadStart(RefreshStatus));
             refreshThread.IsBackground = true;
             refreshThread.Start();
@@ -127,7 +129,7 @@ namespace twin_futs
                     //get client socket
                     Socket client = mServer.Accept();
                     //create message thread object
-                    newClient = new ClientThread(client, mDeviceParams, mDeviceConnections, otList, grbList);
+                    newClient = new ClientThread(client, mDeviceParams, mDeviceConnections, otList, grbList, obsTarList);
                     //pass client method to thread
                     Thread newthread = new Thread(new ThreadStart(newClient.ClientService));
                     //start thread message service
@@ -186,8 +188,9 @@ namespace twin_futs
         int i;
         List<OT> otList;
         List<GRB> grbList;
+        List<ObsTar> obsTarList;
         //constructor
-        public ClientThread(Socket clientSocket, DeviceParams[] deviceParams, Dictionary<string, Socket> deviceConnections, List<OT> _otList, List<GRB> _grbList)
+        public ClientThread(Socket clientSocket, DeviceParams[] deviceParams, Dictionary<string, Socket> deviceConnections, List<OT> _otList, List<GRB> _grbList, List<ObsTar> _obsTarList)
         {
             //save client socket
             this.mService = clientSocket;
@@ -195,6 +198,7 @@ namespace twin_futs
             this.mDeviceConnections = deviceConnections;
             otList = _otList;
             grbList = _grbList;
+            obsTarList = _obsTarList;
         }
         public void ClientService()
         {
@@ -321,6 +325,7 @@ namespace twin_futs
                 string[] cmdList = message.Split(',');
                 deviceType = cmdList[0];
                 string reply = "";
+                
                 int futId = 0;
 
                 if (cmdList.Length < 3)
@@ -329,90 +334,92 @@ namespace twin_futs
                 lt = cmdList.Last();
 
                 //解析望远镜单元消息
-                if (deviceType == "RT1")
+                if (deviceType == "RT1" || deviceType == "RT2")
                 {
+                    if (deviceType=="RT1")
+                    {
+                        futId=0;
+                    }
+                    else if (deviceType=="RT2")
+                    {
+                        futId=1;
+                    }
                     if (cmd == "STATUS")
                     {
-                        if (cmdList.Length < 27)
-                            return;
+                        
+                        //if (cmdList.Length < 27)
+                        //    return;
                         //mount status
-                        mDeviceParams[0].mountParams.ra = cmdList[2];
-                        mDeviceParams[0].mountParams.dec = cmdList[3];
-                        mDeviceParams[0].mountParams.az = cmdList[4];
-                        mDeviceParams[0].mountParams.alt = cmdList[5];
-                        mDeviceParams[0].mountParams.date = cmdList[6];
-                        mDeviceParams[0].mountParams.ut = cmdList[7];
-                        mDeviceParams[0].mountParams.st = cmdList[8];
-                        mDeviceParams[0].mountParams.stat = int.Parse(cmdList[9]);
+                        mDeviceParams[futId].mountParams.ra = cmdList[2];
+                        mDeviceParams[futId].mountParams.dec = cmdList[3];
+                        mDeviceParams[futId].mountParams.targetRa = cmdList[4];
+                        mDeviceParams[futId].mountParams.targetDec = cmdList[5];
+                        mDeviceParams[futId].mountParams.az = cmdList[6];
+                        mDeviceParams[futId].mountParams.alt = cmdList[7];
+                        mDeviceParams[futId].mountParams.date = cmdList[8];
+                        mDeviceParams[futId].mountParams.ut = cmdList[9];
+                        mDeviceParams[futId].mountParams.st = cmdList[10];
+                        mDeviceParams[futId].mountParams.stat = int.Parse(cmdList[11]);
                         //focuser status
-                        mDeviceParams[0].focuserParams.pos = double.Parse(cmdList[10]);
-                        mDeviceParams[0].focuserParams.isMoving = int.Parse(cmdList[11]);
-                        mDeviceParams[0].focuserParams.temp = double.Parse(cmdList[12]);
+                        mDeviceParams[futId].focuserParams.pos = double.Parse(cmdList[12]);
+                        mDeviceParams[futId].focuserParams.isMoving = int.Parse(cmdList[13]);
+                        mDeviceParams[futId].focuserParams.temp = double.Parse(cmdList[14]);
                         //ccd status
-                        mDeviceParams[0].ccdParams.temp = double.Parse(cmdList[13]);
-                        mDeviceParams[0].ccdParams.coolerSwitch = cmdList[14] == "1" ? true : false;
-                        mDeviceParams[0].ccdParams.acqStat = int.Parse(cmdList[15]);
-                        mDeviceParams[0].ccdParams.gain = int.Parse(cmdList[16]);
-                        mDeviceParams[0].ccdParams.binx = int.Parse(cmdList[17]);
-                        mDeviceParams[0].ccdParams.biny = int.Parse(cmdList[18]);
-                        mDeviceParams[0].ccdParams.imgPath = cmdList[19];
-                        mDeviceParams[0].ccdParams.acqProc = double.Parse(cmdList[20]);
-                        mDeviceParams[0].ccdParams.curNumb = int.Parse(cmdList[21]);
-                        mDeviceParams[0].ccdParams.imgAmt = int.Parse(cmdList[22]);
+                        mDeviceParams[futId].ccdParams.temp = double.Parse(cmdList[15]);
+                        mDeviceParams[futId].ccdParams.coolerSwitch = cmdList[16] == "1" ? true : false;
+                        mDeviceParams[futId].ccdParams.acqStat = int.Parse(cmdList[17]);
+                        mDeviceParams[futId].ccdParams.gain = int.Parse(cmdList[18]);
+                        mDeviceParams[futId].ccdParams.binx = int.Parse(cmdList[19]);
+                        mDeviceParams[futId].ccdParams.biny = int.Parse(cmdList[20]);
+                        mDeviceParams[futId].ccdParams.imgPath = cmdList[21];
+                        mDeviceParams[futId].ccdParams.acqProc = double.Parse(cmdList[22]);
+                        mDeviceParams[futId].ccdParams.curNumb = int.Parse(cmdList[23]);
+                        mDeviceParams[futId].ccdParams.imgAmt = int.Parse(cmdList[24]);
                         //wheel status
-                        mDeviceParams[0].wheelParams.curPos = int.Parse(cmdList[23]);
-                        mDeviceParams[0].wheelParams.movStatus = int.Parse(cmdList[24]);
+                        mDeviceParams[futId].wheelParams.curPos = int.Parse(cmdList[25]);
+                        mDeviceParams[futId].wheelParams.movStatus = int.Parse(cmdList[26]);
                         //tele status
-                        mDeviceParams[0].teleStat = int.Parse(cmdList[25]);
+                        mDeviceParams[futId].teleStat = int.Parse(cmdList[27]);
+                    }
+                    else if (cmd == "OBS")
+                    {
+                        ObsTar obsTar = new ObsTar();
+                        obsTar.id = int.Parse(cmdList[2]);
+                        obsTar.ra = cmdList[3];
+                        obsTar.dec = cmdList[4];
+                        obsTar.color = cmdList[5];
+                        obsTar.expTime = double.Parse(cmdList[6]);
+                        obsTar.amount = int.Parse(cmdList[7]);
+                        obsTar.fileName = cmdList[8];
+                        res = cmdList[9];
+                        lt = cmdList[10];
+                        if (res == "0")
+                        {
+                            //type == 0表示源已经观测
+                            obsTar.type = 0;
+                        }
+                        //加入已观测列表，准备更新数据库
+                        obsTarList.Add(obsTar);
+                        
+                    }
+                    else if (cmd == "INIT")
+                    {
+                        res = cmdList[2];
+                        //更新整个的望远镜状态，1表示正在观测，0表示空闲
+                        mDeviceParams[futId].teleStat = int.Parse(res);
+
                     }
                     else if (cmd == "HOUSEKEEPING")
                     {
                         //housekeeping策略
-
-                    }
-                    else
-                        return;
-
-                }
-                else if (deviceType == "RT2")
-                {
-                    if (cmd == "STATUS")
-                    {
-                        if (cmdList.Length < 27)
-                            return;
-                        //mount status
-                        mDeviceParams[1].mountParams.ra = cmdList[2];
-                        mDeviceParams[1].mountParams.dec = cmdList[3];
-                        mDeviceParams[1].mountParams.az = cmdList[4];
-                        mDeviceParams[1].mountParams.alt = cmdList[5];
-                        mDeviceParams[1].mountParams.date = cmdList[6];
-                        mDeviceParams[1].mountParams.ut = cmdList[7];
-                        mDeviceParams[1].mountParams.st = cmdList[8];
-                        mDeviceParams[1].mountParams.stat = int.Parse(cmdList[9]);
-                        //focuser status
-                        mDeviceParams[1].focuserParams.pos = double.Parse(cmdList[10]);
-                        mDeviceParams[1].focuserParams.isMoving = int.Parse(cmdList[11]);
-                        mDeviceParams[1].focuserParams.temp = double.Parse(cmdList[12]);
-                        //ccd status
-                        mDeviceParams[1].ccdParams.temp = double.Parse(cmdList[13]);
-                        mDeviceParams[1].ccdParams.coolerSwitch = cmdList[14] == "1" ? true : false;
-                        mDeviceParams[1].ccdParams.acqStat = int.Parse(cmdList[15]);
-                        mDeviceParams[1].ccdParams.gain = int.Parse(cmdList[16]);
-                        mDeviceParams[1].ccdParams.binx = int.Parse(cmdList[17]);
-                        mDeviceParams[1].ccdParams.biny = int.Parse(cmdList[18]);
-                        mDeviceParams[1].ccdParams.imgPath = cmdList[19];
-                        mDeviceParams[1].ccdParams.acqProc = double.Parse(cmdList[20]);
-                        mDeviceParams[1].ccdParams.curNumb = int.Parse(cmdList[21]);
-                        mDeviceParams[1].ccdParams.imgAmt = int.Parse(cmdList[22]);
-                        //wheel status
-                        mDeviceParams[1].wheelParams.curPos = int.Parse(cmdList[23]);
-                        mDeviceParams[1].wheelParams.movStatus = int.Parse(cmdList[24]);
-                        //tele status
-                        mDeviceParams[1].teleStat = int.Parse(cmdList[25]);
-                    }
-                    else if (cmd == "HOUSEKEEPING")
-                    {
-                        //housekeeping策略
+                        if (futId == 0)
+                        {
+                            //一号机策略
+                        }
+                        else if (futId == 1)
+                        {
+                            //二号机策略
+                        }
 
                     }
                     else
@@ -426,15 +433,21 @@ namespace twin_futs
                         //接收OT
                         if (cmdList[2] != "OT")
                             return;
-                        if (cmdList.Length < 11)
+                        if (cmdList.Length < 10)
                             return;
                         OT ot = new OT();
                         ot.id = cmdList[3];
                         ot.ra = cmdList[4];
                         ot.dec = cmdList[5];
-                        ot.probeTime = cmdList[6];
-                        ot.mag = cmdList[7];
-                        ot.status = cmdList[8];
+                        ot.mag = cmdList[6];
+                        ot.status = cmdList[7];
+                        ot.endFlag = cmdList[8];
+                        if (ot.endFlag != "END")
+                        {
+                            return;
+                        }
+                        lt = cmdList[9];
+                        //加入OT列表，以便加入数据库
                         otList.Add(ot);
                         //send reply message
                         reply = "R" + string.Join(",", cmdList, 0, cmdList.Length - 1);
